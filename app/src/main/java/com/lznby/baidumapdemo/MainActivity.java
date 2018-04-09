@@ -7,11 +7,12 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
-import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.SDKInitializer;
@@ -31,10 +32,10 @@ import com.lznby.baidumapdemo.util.Util;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.jpush.android.api.JPushInterface;
+
 public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarkerClickListener{
     public LocationClient mLocationClient;
-
-    private TextView positionText;
 
     private MapView mapView;
 
@@ -42,20 +43,32 @@ public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarker
 
     private boolean isFirstLocate = true;
 
+    private TextView mMarkNameTV;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mLocationClient = new LocationClient(getApplicationContext());
-        mLocationClient.registerLocationListener(new MyLocationListener());
+
         SDKInitializer.initialize(getApplicationContext());
+
+        /**
+         * 极光推送初始化
+         */
+        JPushInterface.setDebugMode(true);
+        JPushInterface.init(this);
+
         setContentView(R.layout.activity_main);
+
         mapView = (MapView) findViewById(R.id.bmapView);
         baiduMap = mapView.getMap();
         baiduMap.setMyLocationEnabled(true);
-        positionText = (TextView) findViewById(R.id.position_text_view);
+
+        mLocationClient = new LocationClient(getApplicationContext());
+        mLocationClient.registerLocationListener(new MyLocationListener());
 
         /**
-         * 测试解析
+         * 测试解析JSON
          */
         Util.sendRequestWithOkHttp();
 
@@ -149,28 +162,17 @@ public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarker
 
 
         /**
-         * Mark动画，出错闪烁
+         * 地图加载完成监听事件
          */
-        // 通过Marker的icons设置一组图片，再通过period设置多少帧刷新一次图片资源
-/*        BitmapDescriptor bitmap_red = BitmapDescriptorFactory
-                .fromResource(R.drawable.mark_red);
-        BitmapDescriptor bitmap_white = BitmapDescriptorFactory
-                .fromResource(R.drawable.mark_white);
+        baiduMap.setOnMapLoadedCallback(new BaiduMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
 
-
-
-        ArrayList<BitmapDescriptor> giflist = new ArrayList<BitmapDescriptor>();
-
-        giflist.add(bitmap_red);
-        giflist.add(bitmap_white);
-
-        OverlayOptions ooD = new MarkerOptions().position(point2).icons(giflist)
-                .zIndex(0).period(10);
-
-        mMarkerD = (Marker) (mBaiduMap.addOverlay(ooD));*/
+            }
+        });
 
     }
-
+/***************************************onCreate分割线*********************************************/
     /**
      * 设置当前位置为地图中心
      * @param location
@@ -184,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarker
             //LatLng ll = new LatLng(29,121);
             Log.d("navigateTo","navigateTo执行,传入纬度：" + location.getLatitude()+"经度：" + location.getLongitude());
             Log.d("navigateTo","navigateTo执行,传入纬度：" + ll.latitude+"经度：" + ll.longitude);
+            Log.d("MainActivityE","navigateTo执行,传入纬度：" + ll.latitude+"经度：" + ll.longitude);
+
             MapStatusUpdate update = MapStatusUpdateFactory.newLatLngZoom(ll,10f);//设置缩放大小
             baiduMap.animateMapStatus(update);
         }
@@ -270,31 +274,19 @@ public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarker
     @Override
     public boolean onMarkerClick(Marker marker) {
         Toast.makeText(this,marker.getId().toString()+"", Toast.LENGTH_SHORT).show();
+        mMarkNameTV = (TextView) findViewById(R.id.mark_name_tv);//为什么写在onCreate方法中不行，无法获取到值
+        mMarkNameTV.setVisibility(View.VISIBLE);
         return false;
     }
 
+
     /**
-     *
+     * 自定义当前位置监听类
      */
-    public class MyLocationListener implements BDLocationListener {
+    public class MyLocationListener extends BDAbstractLocationListener {
 
         @Override
         public void onReceiveLocation(BDLocation location) {
-            //            StringBuilder currentPosition = new StringBuilder();
-            //            currentPosition.append("纬度：").append(location.getLatitude()).append("\n");
-            //            currentPosition.append("经线：").append(location.getLongitude()).append("\n");
-            //            currentPosition.append("国家：").append(location.getCountry()).append("\n");
-            //            currentPosition.append("省：").append(location.getProvince()).append("\n");
-            //            currentPosition.append("市：").append(location.getCity()).append("\n");
-            //            currentPosition.append("区：").append(location.getDistrict()).append("\n");
-            //            currentPosition.append("街道：").append(location.getStreet()).append("\n");
-            //            currentPosition.append("定位方式：");
-            //            if (location.getLocType() == BDLocation.TypeGpsLocation) {
-            //                currentPosition.append("GPS");
-            //            } else if (location.getLocType() == BDLocation.TypeNetWorkLocation) {
-            //                io.append("网络");
-            //            }
-            //            positionText.setText(currentPosition);
             if (location.getLocType() == BDLocation.TypeGpsLocation
                     || location.getLocType() == BDLocation.TypeNetWorkLocation) {
                 navigateTo(location);
