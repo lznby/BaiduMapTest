@@ -26,6 +26,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
+import com.lznby.baidumapdemo.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,12 @@ public class MainActivity extends AppCompatActivity implements BaiduMap.OnMarker
         baiduMap = mapView.getMap();
         baiduMap.setMyLocationEnabled(true);
         positionText = (TextView) findViewById(R.id.position_text_view);
+
+        /**
+         * 测试解析
+         */
+        Util.sendRequestWithOkHttp();
+
 
         /**
          * 权限请求
